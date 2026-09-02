@@ -14,7 +14,7 @@ public class PDSACW {
 
         while (running) {
             System.out.println("\nMain Menu - Select a Module to Execute:");
-            System.out.println("1. Task 1: Route Optimization (Dijkstra vs Bellman-Ford)");
+            System.out.println("1. Task 1: Route Optimization (Dijkstra vs Bellman-Ford vs A*)");
             System.out.println("2. Task 2: Resource Allocation (Knapsack DP vs Greedy)");
             System.out.println("3. Task 3: Network Analysis (MST Prim vs Kruskal)");
             System.out.println("4. Task 4: Intelligent Decision (WSM vs TOPSIS)");
@@ -58,49 +58,108 @@ public class PDSACW {
     // ==========================================
 
     private static void runTask1() {
-        int numberOfCities = 5;
-        Graph routeGraph = new Graph(numberOfCities);
-        String[] cities = {"Colombo", "Kurunegala", "Kandy", "Dambulla", "Anuradhapura"};
 
-        routeGraph.addEdge(0, 1, 95);  
-        routeGraph.addEdge(0, 2, 115); 
-        routeGraph.addEdge(1, 3, 55);  
-        routeGraph.addEdge(2, 3, 72);  
-        routeGraph.addEdge(3, 4, 65);  
-        routeGraph.addEdge(1, 4, 110); 
+    int numberOfCities = 5;
 
-        DijkstraAlgorithm dijkstra = new DijkstraAlgorithm();
-        BellmanFordAlgorithm bellmanFord = new BellmanFordAlgorithm();
-        Runtime runtime = Runtime.getRuntime();
+    Graph routeGraph = new Graph(numberOfCities);
 
-        System.out.println("========== ALGORITHM COMPARISON ==========");
+    String[] cities = {
+        "Colombo",
+        "Kurunegala",
+        "Kandy",
+        "Dambulla",
+        "Anuradhapura"
+    };
 
-        // --- DIJKSTRA EXECUTION ---
-        runtime.gc(); 
-        long startMemD = runtime.totalMemory() - runtime.freeMemory();
-        long startTimeD = System.nanoTime();
-        
-        dijkstra.findShortestPath(routeGraph, 0, cities);
-        
-        long endTimeD = System.nanoTime();
-        long endMemD = runtime.totalMemory() - runtime.freeMemory();
+    routeGraph.addEdge(0, 1, 95);
+    routeGraph.addEdge(0, 2, 115);
+    routeGraph.addEdge(1, 3, 55);
+    routeGraph.addEdge(2, 3, 72);
+    routeGraph.addEdge(3, 4, 65);
+    routeGraph.addEdge(1, 4, 110);
 
-        System.out.println("Dijkstra Time: " + (endTimeD - startTimeD) / 1_000_000.0 + " ms");
-        System.out.println("Dijkstra Memory: " + (endMemD - startMemD) + " bytes\n");
+    DijkstraAlgorithm dijkstra = new DijkstraAlgorithm();
+    BellmanFordAlgorithm bellmanFord = new BellmanFordAlgorithm();
+    AStarAlgorithm aStar = new AStarAlgorithm();
 
-        // --- BELLMAN-FORD EXECUTION ---
-        runtime.gc();
-        long startMemB = runtime.totalMemory() - runtime.freeMemory();
-        long startTimeB = System.nanoTime();
-        
-        bellmanFord.findShortestPath(routeGraph, 0, cities);
-        
-        long endTimeB = System.nanoTime();
-        long endMemB = runtime.totalMemory() - runtime.freeMemory();
+    System.out.println("========== ROUTE OPTIMIZATION ==========");
 
-        System.out.println("Bellman-Ford Time: " + (endTimeB - startTimeB) / 1_000_000.0 + " ms");
-        System.out.println("Bellman-Ford Memory: " + (endMemB - startMemB) + " bytes");
-    }
+    // -----------------------------
+    // DIJKSTRA
+    // -----------------------------
+    long startDijkstra = System.nanoTime();
+
+    dijkstra.findShortestPath(
+            routeGraph,
+            0,
+            cities
+    );
+
+    long endDijkstra = System.nanoTime();
+
+    System.out.println(
+            "Dijkstra Time: "
+            + (endDijkstra - startDijkstra) / 1_000_000.0
+            + " ms\n"
+    );
+
+    // -----------------------------
+    // BELLMAN-FORD
+    // -----------------------------
+    long startBellmanFord = System.nanoTime();
+
+    bellmanFord.findShortestPath(
+            routeGraph,
+            0,
+            cities
+    );
+
+    long endBellmanFord = System.nanoTime();
+
+    System.out.println(
+            "Bellman-Ford Time: "
+            + (endBellmanFord - startBellmanFord) / 1_000_000.0
+            + " ms\n"
+    );
+
+    // -----------------------------
+    // A*
+    // -----------------------------
+    /*
+     * Heuristic values must be admissible.
+     * For this small demonstration graph,
+     * zero heuristic makes A* behave like
+     * Dijkstra while still demonstrating
+     * the A* algorithm structure.
+     */
+    double[] heuristic = {
+        0,
+        0,
+        0,
+        0,
+        0
+    };
+
+    long startAStar = System.nanoTime();
+
+    aStar.findShortestPath(
+            routeGraph,
+            0,
+            4,
+            cities,
+            heuristic
+    );
+
+    long endAStar = System.nanoTime();
+
+    System.out.println(
+            "A* Time: "
+            + (endAStar - startAStar) / 1_000_000.0
+            + " ms\n"
+    );
+
+    System.out.println("========================================");
+}
 
     private static void runTask2() {
         System.out.println("--- Task 2: Intelligent Resource Allocation ---");
