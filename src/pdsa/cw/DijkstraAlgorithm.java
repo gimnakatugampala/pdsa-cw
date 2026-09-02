@@ -1,51 +1,35 @@
 package pdsa.cw;
+
 import java.util.*;
 
 public class DijkstraAlgorithm {
-    public void findShortestPath(Graph graph, int startNode, String[] cityNames) {
-        int nodesCount = graph.nodes;
-        int[] distances = new int[nodesCount];
-        int[] previousNode = new int[nodesCount]; // Tracks the path
-
-        Arrays.fill(distances, Integer.MAX_VALUE);
-        Arrays.fill(previousNode, -1);
-        distances[startNode] = 0;
-
-        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(a -> a[1]));
-        pq.add(new int[] { startNode, 0 });
-
+    public PathResult findPath(Graph graph, int start, int goal) {
+        validate(graph, start, goal);
+        int n = graph.nodes;
+        int[] dist = new int[n]; Arrays.fill(dist, Integer.MAX_VALUE);
+        int[] prev = new int[n]; Arrays.fill(prev, -1);
+        PriorityQueue<Node> pq = new PriorityQueue<>(Comparator.comparingInt(a -> a.distance));
+        dist[start] = 0; pq.add(new Node(start, 0));
         while (!pq.isEmpty()) {
-            int[] current = pq.poll();
-            int currentNode = current[0];
-            int currentDist = current[1];
-
-            if (currentDist > distances[currentNode]) continue;
-
-            for (Edge edge : graph.adjList.get(currentNode)) {
-                int newDist = distances[currentNode] + edge.weight;
-                if (newDist < distances[edge.targetNode]) {
-                    distances[edge.targetNode] = newDist;
-                    previousNode[edge.targetNode] = currentNode; // Record the route
-                    pq.add(new int[] { edge.targetNode, newDist });
+            Node cur = pq.poll();
+            if (cur.distance != dist[cur.node]) continue;
+            if (cur.node == goal) break;
+            for (Edge e : graph.adjList.get(cur.node)) {
+                long nd = (long)dist[cur.node] + e.weight;
+                if (nd < dist[e.targetNode]) {
+                    dist[e.targetNode] = (int)nd; prev[e.targetNode] = cur.node;
+                    pq.add(new Node(e.targetNode, dist[e.targetNode]));
                 }
             }
         }
-        printRoutes(startNode, distances, previousNode, cityNames);
+        return PathResult.from(goal, dist, prev, start);
     }
-
-    private void printRoutes(int start, int[] dist, int[] prev, String[] cities) {
-        System.out.println("\n--- Optimal Routes from " + cities[start] + " ---");
-        for (int i = 0; i < dist.length; i++) {
-            if (i == start) continue;
-            System.out.print("To " + cities[i] + " (" + dist[i] + " km): ");
-            printPath(i, prev, cities);
-            System.out.println();
-        }
+    public void findShortestPath(Graph graph, int start, int goal, String[] names) {
+        PathResult r = findPath(graph, start, goal); r.print("Dijkstra", names);
     }
-
-    private void printPath(int current, int[] prev, String[] cities) {
-        if (current == -1) return;
-        printPath(prev[current], prev, cities);
-        System.out.print(cities[current] + (prev[current] != -1 ? " <- " : " "));
+    private static void validate(Graph g, int s, int t) {
+        if (g == null) throw new IllegalArgumentException("Graph cannot be null.");
+        if (s < 0 || s >= g.nodes || t < 0 || t >= g.nodes) throw new IndexOutOfBoundsException("Invalid node.");
     }
+    private static final class Node { final int node, distance; Node(int n, int d){node=n;distance=d;} }
 }

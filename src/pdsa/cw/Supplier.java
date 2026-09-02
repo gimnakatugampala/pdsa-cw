@@ -1,16 +1,11 @@
 package pdsa.cw;
 
-public class Supplier {
-    String name;
-    double cost;        // Lower is better
-    double reliability; // Higher is better (out of 100)
-    double deliveryTime;// Lower is better (in days)
-    double finalScore;
-
+public final class Supplier {
+    public final String name;
+    public final double cost;
+    public final double reliability;
+    public final double deliveryTime;
     public Supplier(String name, double cost, double reliability, double deliveryTime) {
-        this.name = name;
-        this.cost = cost;
-        this.reliability = reliability;
-        this.deliveryTime = deliveryTime;
+        this.name = name; this.cost = cost; this.reliability = reliability; this.deliveryTime = deliveryTime;
     }
 }

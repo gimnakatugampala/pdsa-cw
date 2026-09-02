@@ -1,83 +1,14 @@
 package pdsa.cw;
 
+import java.util.*;
+
 public class OptimizationModule {
-    private int minCost;
-    private int[] bestPath;
-
-    // --- APPROACH 1: EXACT ALGORITHM (BRUTE FORCE) ---
-    public void solveExactTSP(int[][] distMatrix) {
-        System.out.println("Solving TSP with Exact Algorithm (Brute Force)...");
-        int n = distMatrix.length;
-        boolean[] visited = new boolean[n];
-        int[] currentPath = new int[n];
-        
-        visited[0] = true;
-        currentPath[0] = 0;
-        minCost = Integer.MAX_VALUE;
-        bestPath = new int[n];
-        
-        tspBacktrack(distMatrix, visited, currentPath, 0, 1, 0, n);
-        
-        System.out.println("Exact TSP Optimal Cost: " + minCost + " km");
-        System.out.print("Exact Route: ");
-        for (int city : bestPath) {
-            System.out.print(city + " -> ");
-        }
-        System.out.println("0\n"); // Return to start
-    }
-
-    private void tspBacktrack(int[][] dist, boolean[] visited, int[] path, int currPos, int count, int cost, int n) {
-        // Base case: All cities visited, check return distance
-        if (count == n && dist[currPos][0] > 0) {
-            if (cost + dist[currPos][0] < minCost) {
-                minCost = cost + dist[currPos][0];
-                System.arraycopy(path, 0, bestPath, 0, n);
-            }
-            return;
-        }
-        
-        // Recursive case: Try next unvisited cities
-        for (int i = 0; i < n; i++) {
-            if (!visited[i] && dist[currPos][i] > 0) {
-                visited[i] = true;
-                path[count] = i;
-                tspBacktrack(dist, visited, path, i, count + 1, cost + dist[currPos][i], n);
-                visited[i] = false;
-            }
-        }
-    }
-
-    // --- APPROACH 2: HEURISTIC ALGORITHM (NEAREST NEIGHBOR) ---
-    public void solveHeuristicTSP(int[][] distMatrix) {
-        System.out.println("Solving TSP with Heuristic Algorithm (Nearest Neighbor)...");
-        int n = distMatrix.length;
-        boolean[] visited = new boolean[n];
-        visited[0] = true;
-        
-        int currentCity = 0;
-        int totalCost = 0;
-        System.out.print("Heuristic Route: 0 -> ");
-        
-        for (int step = 1; step < n; step++) {
-            int nextCity = -1;
-            int minEdge = Integer.MAX_VALUE;
-            
-            for (int i = 0; i < n; i++) {
-                if (!visited[i] && distMatrix[currentCity][i] > 0 && distMatrix[currentCity][i] < minEdge) {
-                    minEdge = distMatrix[currentCity][i];
-                    nextCity = i;
-                }
-            }
-            
-            visited[nextCity] = true;
-            totalCost += minEdge;
-            currentCity = nextCity;
-            System.out.print(currentCity + " -> ");
-        }
-        
-        // Return to starting city
-        totalCost += distMatrix[currentCity][0];
-        System.out.println("0");
-        System.out.println("Heuristic TSP Cost: " + totalCost + " km\n");
-    }
+    public TspResult exact(List<List<Integer>> d){validate(d);int n=d.size();boolean[]used=new boolean[n];used[0]=true;List<Integer>path=new ArrayList<>();path.add(0);Best best=new Best(Integer.MAX_VALUE);permute(d,0,used,path,0,best);return new TspResult(best.cost,best.path,"Exact Enumeration");}
+    private void permute(List<List<Integer>>d,int u,boolean[]used,List<Integer>path,int cost,Best best){if(path.size()==d.size()){int total=cost+d.get(u).get(0);if(total<best.cost){best.cost=total;best.path=new ArrayList<>(path);best.path.add(0);}return;}for(int v=1;v<d.size();v++)if(!used[v]){int next=cost+d.get(u).get(v);if(next>=best.cost)continue;used[v]=true;path.add(v);permute(d,v,used,path,next,best);path.remove(path.size()-1);used[v]=false;}}
+    public TspResult nearestNeighbor(List<List<Integer>>d){validate(d);int n=d.size(),cur=0,total=0;boolean[]used=new boolean[n];used[0]=true;List<Integer>path=new ArrayList<>();path.add(0);for(int step=1;step<n;step++){int best=-1,bestDist=Integer.MAX_VALUE;for(int v=1;v<n;v++)if(!used[v]&&d.get(cur).get(v)<bestDist){bestDist=d.get(cur).get(v);best=v;}used[best]=true;path.add(best);total+=bestDist;cur=best;}total+=d.get(cur).get(0);path.add(0);return new TspResult(total,path,"Nearest Neighbor");}
+    public TspResult twoOpt(List<List<Integer>>d){validate(d);TspResult base=nearestNeighbor(d);List<Integer>route=new ArrayList<>(base.tour);boolean improved=true;while(improved){improved=false;for(int i=1;i<route.size()-2;i++)for(int k=i+1;k<route.size()-1;k++){List<Integer>candidate=new ArrayList<>(route);Collections.reverse(candidate.subList(i,k+1));int c=cost(d,candidate);if(c<cost(d,route)){route=candidate;improved=true;}}}return new TspResult(cost(d,route),route,"2-opt (from Nearest Neighbor)");}
+    private int cost(List<List<Integer>>d,List<Integer>p){int s=0;for(int i=0;i<p.size()-1;i++)s+=d.get(p.get(i)).get(p.get(i+1));return s;}
+    private static void validate(List<List<Integer>>d){if(d==null||d.size()<2)throw new IllegalArgumentException("Distance matrix must contain at least two cities.");int n=d.size();for(List<Integer>r:d)if(r==null||r.size()!=n)throw new IllegalArgumentException("Distance matrix must be square.");for(int i=0;i<n;i++)if(d.get(i).get(i)!=0)throw new IllegalArgumentException("Diagonal distances must be zero.");}
+    public static final class TspResult {public final int cost;public final List<Integer>tour;public final String algorithm;TspResult(int c,List<Integer>t,String a){cost=c;tour=Collections.unmodifiableList(t);algorithm=a;}public void print(String[]names){System.out.println("\n--- "+algorithm+" ---\nTour cost: "+cost+" km\nTour: "+tour.stream().map(i->names==null?String.valueOf(i):names[i]).reduce((a,b)->a+" -> "+b).orElse(""));}}
+    private static final class Best{int cost;List<Integer>path=new ArrayList<>();Best(int c){cost=c;}}
 }

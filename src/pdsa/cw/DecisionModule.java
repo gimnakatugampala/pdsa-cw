@@ -1,91 +1,17 @@
 package pdsa.cw;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 
 public class DecisionModule {
-
-    // --- APPROACH 1: WEIGHTED SUM MODEL (WSM) ---
-    public void rankWithWSM(Supplier[] suppliers, double[] weights) {
-        System.out.println("Ranking Suppliers using WSM (Heuristic)...");
-        
-        // Normalize and calculate score (assuming Cost/Time need to be inverted, so we subtract from a max value)
-        double maxCost = Arrays.stream(suppliers).mapToDouble(s -> s.cost).max().orElse(1);
-        double maxTime = Arrays.stream(suppliers).mapToDouble(s -> s.deliveryTime).max().orElse(1);
-
-        for (Supplier s : suppliers) {
-            double normCost = 1.0 - (s.cost / maxCost); 
-            double normRel = s.reliability / 100.0;
-            double normTime = 1.0 - (s.deliveryTime / maxTime);
-
-            s.finalScore = (normCost * weights[0]) + (normRel * weights[1]) + (normTime * weights[2]);
-        }
-
-        // Sort by final score descending
-        Arrays.sort(suppliers, (a, b) -> Double.compare(b.finalScore, a.finalScore));
-
-        for (int i = 0; i < suppliers.length; i++) {
-            System.out.printf("%d. %s (Score: %.4f)%n", (i + 1), suppliers[i].name, suppliers[i].finalScore);
-        }
-        System.out.println();
-    }
-
-    // --- APPROACH 2: SIMPLIFIED TOPSIS ALGORITHM ---
-    public void rankWithTOPSIS(Supplier[] suppliers, double[] weights) {
-        System.out.println("Ranking Suppliers using TOPSIS (Analytical Distance)...");
-        int n = suppliers.length;
-        
-        // 1. Calculate sum of squares for normalization
-        double sumCostSq = 0, sumRelSq = 0, sumTimeSq = 0;
-        for (Supplier s : suppliers) {
-            sumCostSq += Math.pow(s.cost, 2);
-            sumRelSq += Math.pow(s.reliability, 2);
-            sumTimeSq += Math.pow(s.deliveryTime, 2);
-        }
-        sumCostSq = Math.sqrt(sumCostSq);
-        sumRelSq = Math.sqrt(sumRelSq);
-        sumTimeSq = Math.sqrt(sumTimeSq);
-
-        // 2. Identify Ideal Best and Ideal Worst (Simplified for Cost=min, Rel=max, Time=min)
-        double idealBestCost = Double.MAX_VALUE, idealWorstCost = Double.MIN_VALUE;
-        double idealBestRel = Double.MIN_VALUE, idealWorstRel = Double.MAX_VALUE;
-        double idealBestTime = Double.MAX_VALUE, idealWorstTime = Double.MIN_VALUE;
-
-        double[][] normalizedMatrix = new double[n][3];
-        for (int i = 0; i < n; i++) {
-            normalizedMatrix[i][0] = (suppliers[i].cost / sumCostSq) * weights[0];
-            normalizedMatrix[i][1] = (suppliers[i].reliability / sumRelSq) * weights[1];
-            normalizedMatrix[i][2] = (suppliers[i].deliveryTime / sumTimeSq) * weights[2];
-
-            idealBestCost = Math.min(idealBestCost, normalizedMatrix[i][0]);
-            idealWorstCost = Math.max(idealWorstCost, normalizedMatrix[i][0]);
-
-            idealBestRel = Math.max(idealBestRel, normalizedMatrix[i][1]);
-            idealWorstRel = Math.min(idealWorstRel, normalizedMatrix[i][1]);
-
-            idealBestTime = Math.min(idealBestTime, normalizedMatrix[i][2]);
-            idealWorstTime = Math.max(idealWorstTime, normalizedMatrix[i][2]);
-        }
-
-        // 3. Calculate distance to ideal best and worst, then calculate relative closeness
-        for (int i = 0; i < n; i++) {
-            double distBest = Math.sqrt(Math.pow(normalizedMatrix[i][0] - idealBestCost, 2) + 
-                                        Math.pow(normalizedMatrix[i][1] - idealBestRel, 2) + 
-                                        Math.pow(normalizedMatrix[i][2] - idealBestTime, 2));
-                                        
-            double distWorst = Math.sqrt(Math.pow(normalizedMatrix[i][0] - idealWorstCost, 2) + 
-                                         Math.pow(normalizedMatrix[i][1] - idealWorstRel, 2) + 
-                                         Math.pow(normalizedMatrix[i][2] - idealWorstTime, 2));
-
-            suppliers[i].finalScore = distWorst / (distBest + distWorst);
-        }
-
-        // Sort by TOPSIS relative closeness descending
-        Arrays.sort(suppliers, (a, b) -> Double.compare(b.finalScore, a.finalScore));
-
-        for (int i = 0; i < suppliers.length; i++) {
-            System.out.printf("%d. %s (Relative Closeness: %.4f)%n", (i + 1), suppliers[i].name, suppliers[i].finalScore);
-        }
-        System.out.println();
-    }
+    // Criteria order: cost (lower better), reliability (higher better), delivery time (lower better).
+    public List<ScoredSupplier> weightedSumModel(List<Supplier> suppliers,double[] weights){validate(suppliers,weights);double[][] x=matrix(suppliers);double[] score=new double[suppliers.size()];double[] min={min(x,0),min(x,2),min(x,1)}; // retained to document direction handling
+        for(int i=0;i<suppliers.size();i++){double cost=x[i][0]/max(x,0);double reliability=x[i][1]/max(x,1);double time=min(x,2)/x[i][2];score[i]=weights[0]*(1-cost)+weights[1]*reliability+weights[2]*time;}return rank(suppliers,score,"WSM");}
+    public List<ScoredSupplier> topsis(List<Supplier> suppliers,double[] weights){validate(suppliers,weights);double[][] x=matrix(suppliers);int m=x.length,n=3;double[][] norm=new double[m][n];for(int j=0;j<n;j++){double denom=0;for(int i=0;i<m;i++)denom+=x[i][j]*x[i][j];denom=Math.sqrt(denom);for(int i=0;i<m;i++)norm[i][j]=denom==0?0:x[i][j]/denom;}
+        for(int i=0;i<m;i++)for(int j=0;j<n;j++)norm[i][j]*=weights[j];double[] best=new double[n],worst=new double[n];for(int j=0;j<n;j++){boolean benefit=j==1;best[j]=benefit?max(norm,j):min(norm,j);worst[j]=benefit?min(norm,j):max(norm,j);}double[] score=new double[m];for(int i=0;i<m;i++){double bp=0,wm=0;for(int j=0;j<n;j++){bp+=Math.pow(norm[i][j]-best[j],2);wm+=Math.pow(norm[i][j]-worst[j],2);}double db=Math.sqrt(bp),dw=Math.sqrt(wm);score[i]=(db+dw)==0?1:dw/(db+dw);}return rank(suppliers,score,"TOPSIS");}
+    public List<ScoredSupplier> weightedProductModel(List<Supplier> suppliers,double[] weights){validate(suppliers,weights);double[] cost=new double[suppliers.size()];for(int i=0;i<suppliers.size();i++)cost[i]=Math.pow(suppliers.get(i).cost,-weights[0])*Math.pow(suppliers.get(i).reliability,weights[1])*Math.pow(suppliers.get(i).deliveryTime,-weights[2]);double sum=0;for(double v:cost)sum+=v;for(int i=0;i<cost.length;i++)cost[i]/=sum;return rank(suppliers,cost,"Weighted Product Model");}
+    private List<ScoredSupplier> rank(List<Supplier>s,double[]score,String algo){List<ScoredSupplier>r=new ArrayList<>();for(int i=0;i<s.size();i++)r.add(new ScoredSupplier(s.get(i),score[i],algo));r.sort((a,b)->Double.compare(b.score,a.score));for(int i=0;i<r.size();i++)r.get(i).rank=i+1;return r;}
+    private static double[][]matrix(List<Supplier>s){double[][]m=new double[s.size()][3];for(int i=0;i<s.size();i++){Supplier x=s.get(i);if(x.cost<=0||x.reliability<=0||x.deliveryTime<=0)throw new IllegalArgumentException("Supplier criteria must be positive.");m[i]=new double[]{x.cost,x.reliability,x.deliveryTime};}return m;}
+    private static void validate(List<Supplier>s,double[]w){if(s==null||s.isEmpty())throw new IllegalArgumentException("Suppliers cannot be empty.");if(w==null||w.length!=3)throw new IllegalArgumentException("Exactly three weights are required.");double sum=0;for(double x:w){if(x<0)throw new IllegalArgumentException("Weights cannot be negative.");sum+=x;}if(Math.abs(sum-1)>1e-9)throw new IllegalArgumentException("Weights must sum to 1.");}
+    private static double max(double[][]a,int j){double v=-Double.MAX_VALUE;for(double[]r:a)v=Math.max(v,r[j]);return v;}private static double min(double[][]a,int j){double v=Double.MAX_VALUE;for(double[]r:a)v=Math.min(v,r[j]);return v;}
+    public static final class ScoredSupplier {public final Supplier supplier;public final double score;public final String algorithm;public int rank;ScoredSupplier(Supplier s,double v,String a){supplier=s;score=v;algorithm=a;}@Override public String toString(){return rank+". "+supplier.name+" score="+String.format(Locale.US,"%.4f",score);}}
 }

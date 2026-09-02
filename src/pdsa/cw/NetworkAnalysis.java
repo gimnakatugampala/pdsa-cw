@@ -3,75 +3,31 @@ package pdsa.cw;
 import java.util.*;
 
 public class NetworkAnalysis {
-
-    // --- PRIM'S ALGORITHM ---
-    public void analyzeWithPrims(Graph graph, String[] cities) {
-        int nodesCount = graph.nodes;
-        boolean[] inMST = new boolean[nodesCount];
-        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(a -> a[2]));
-        
-        int totalCost = 0;
-        System.out.println("Prim's MST Backbone:");
-        
-        // Start from node 0 (targetNode, parentNode, weight)
-        pq.add(new int[]{0, -1, 0});
-
-        while (!pq.isEmpty()) {
-            int[] current = pq.poll();
-            int u = current[0];
-            int parent = current[1];
-            int weight = current[2];
-
-            if (inMST[u]) continue;
-            
-            inMST[u] = true;
-            totalCost += weight;
-            
-            if (parent != -1) {
-                System.out.println(cities[parent] + " - " + cities[u] + " : " + weight + " km");
-            }
-
-            for (Edge edge : graph.adjList.get(u)) {
-                if (!inMST[edge.targetNode]) {
-                    pq.add(new int[]{edge.targetNode, u, edge.weight});
-                }
-            }
-        }
-        System.out.println("Total Prim's Network Cost: " + totalCost + " km\n");
+    public MSTResult prim(Graph graph){
+        if(graph==null)throw new IllegalArgumentException("Graph cannot be null.");
+        if(graph.nodes==0)return new MSTResult(0,new ArrayList<>(),"Prim");
+        boolean[] used=new boolean[graph.nodes]; PriorityQueue<Edge> pq=new PriorityQueue<>(Comparator.comparingInt(e->e.weight));
+        List<Edge> chosen=new ArrayList<>(); int total=0; used[0]=true; pq.addAll(graph.adjList.get(0));
+        while(!pq.isEmpty()&&chosen.size()<graph.nodes-1){Edge e=pq.poll(); if(used[e.targetNode])continue; used[e.targetNode]=true; chosen.add(e); total+=e.weight; pq.addAll(graph.adjList.get(e.targetNode));}
+        if(chosen.size()!=graph.nodes-1)throw new IllegalStateException("Graph is disconnected; no spanning tree exists.");
+        return new MSTResult(total,chosen,"Prim");
     }
-
-    // --- KRUSKAL'S ALGORITHM ---
-    public void analyzeWithKruskals(Graph graph, String[] cities) {
-        List<int[]> allEdges = new ArrayList<>();
-        
-        // Extract all unique edges from the undirected graph
-        for (int u = 0; u < graph.nodes; u++) {
-            for (Edge edge : graph.adjList.get(u)) {
-                if (u < edge.targetNode) { 
-                    allEdges.add(new int[]{u, edge.targetNode, edge.weight});
-                }
-            }
-        }
-
-        // Sort edges by weight
-        allEdges.sort(Comparator.comparingInt(a -> a[2]));
-
-        DisjointSet ds = new DisjointSet(graph.nodes);
-        int totalCost = 0;
-        System.out.println("Kruskal's MST Backbone:");
-
-        for (int[] edge : allEdges) {
-            int u = edge[0];
-            int v = edge[1];
-            int weight = edge[2];
-
-            if (ds.find(u) != ds.find(v)) {
-                ds.union(u, v);
-                totalCost += weight;
-                System.out.println(cities[u] + " - " + cities[v] + " : " + weight + " km");
-            }
-        }
-        System.out.println("Total Kruskal's Network Cost: " + totalCost + " km\n");
-        
+    public MSTResult kruskal(Graph graph){
+        if(graph==null)throw new IllegalArgumentException("Graph cannot be null.");
+        List<Edge> edges=graph.uniqueEdges(); edges.sort(Comparator.comparingInt(e->e.weight));
+        DisjointSet ds=new DisjointSet(graph.nodes); List<Edge> chosen=new ArrayList<>(); int total=0;
+        for(Edge e:edges)if(ds.union(e.sourceNode,e.targetNode)){chosen.add(e);total+=e.weight;if(chosen.size()==graph.nodes-1)break;}
+        if(chosen.size()!=graph.nodes-1)throw new IllegalStateException("Graph is disconnected; no spanning tree exists.");
+        return new MSTResult(total,chosen,"Kruskal");
     }
+    public MSTResult boruvka(Graph graph){
+        if(graph==null)throw new IllegalArgumentException("Graph cannot be null.");
+        DisjointSet ds=new DisjointSet(graph.nodes); int components=graph.nodes,total=0; List<Edge> chosen=new ArrayList<>();
+        while(components>1){Edge[] cheapest=new Edge[graph.nodes];
+            for(Edge e:graph.uniqueEdges()){int a=ds.find(e.sourceNode),b=ds.find(e.targetNode);if(a==b)continue;if(cheapest[a]==null||e.weight<cheapest[a].weight)cheapest[a]=e;if(cheapest[b]==null||e.weight<cheapest[b].weight)cheapest[b]=e;}
+            boolean merged=false; for(Edge e:cheapest)if(e!=null&&ds.union(e.sourceNode,e.targetNode)){chosen.add(e);total+=e.weight;components--;merged=true;} if(!merged)throw new IllegalStateException("Graph is disconnected; no spanning tree exists.");
+        }
+        return new MSTResult(total,chosen,"Boruvka");
+    }
+    public static final class MSTResult {public final int totalWeight;public final List<Edge>edges;public final String algorithm;MSTResult(int w,List<Edge>e,String a){totalWeight=w;edges=Collections.unmodifiableList(e);algorithm=a;} public void print(){System.out.println("\n--- "+algorithm+" MST ---\nTotal weight: "+totalWeight);}}
 }
