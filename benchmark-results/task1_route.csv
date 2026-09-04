@@ -1,0 +1,19 @@
+nodes,edges,algorithm,avgTimeMicros,heapDeltaBytes,distance
+25,99,Dijkstra,133.092,63024,4
+25,99,Bellman-Ford,152.409,42056,4
+25,99,A* (Haversine),211.104,42056,4
+50,199,Dijkstra,252.526,42152,8
+50,199,Bellman-Ford,203.995,42152,8
+50,199,A* (Haversine),244.271,42152,8
+100,399,Dijkstra,278.376,42352,12
+100,399,Bellman-Ford,281.809,42352,12
+100,399,A* (Haversine),252.668,42352,12
+250,999,Dijkstra,427.070,42952,26
+250,999,Bellman-Ford,440.078,84912,26
+250,999,A* (Haversine),521.447,42952,26
+500,1999,Dijkstra,296.881,85920,48
+500,1999,Bellman-Ford,237.358,55072,48
+500,1999,A* (Haversine),497.019,43952,48
+1000,3999,Dijkstra,427.024,115048,88
+1000,3999,Bellman-Ford,209.393,68800,88
+1000,3999,A* (Haversine),553.821,115056,88

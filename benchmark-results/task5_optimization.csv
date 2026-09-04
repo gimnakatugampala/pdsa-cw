@@ -1,0 +1,22 @@
+cities,algorithm,avgTimeMicros,heapDeltaBytes,tourCost
+5,Exact Enumeration,113.771,20112,2169
+5,Nearest Neighbor,75.858,2912,2391
+5,2-opt,161.819,2656,2169
+6,Exact Enumeration,146.460,2656,2469
+6,Nearest Neighbor,94.981,2656,2628
+6,2-opt,148.238,5312,2469
+7,Exact Enumeration,170.970,2656,2977
+7,Nearest Neighbor,82.483,2656,3209
+7,2-opt,156.308,5312,2977
+8,Exact Enumeration,175.527,2656,2576
+8,Nearest Neighbor,80.276,2656,2576
+8,2-opt,144.716,5336,2576
+9,Exact Enumeration,522.382,5336,2154
+9,Nearest Neighbor,88.904,2656,2303
+9,2-opt,145.535,5336,2303
+10,Exact Enumeration,1272.429,8096,2473
+10,Nearest Neighbor,55.941,2656,2739
+10,2-opt,136.420,13336,2473
+11,Exact Enumeration,17023.716,10752,2988
+11,Nearest Neighbor,54.684,2656,3386
+11,2-opt,162.709,23984,3080
